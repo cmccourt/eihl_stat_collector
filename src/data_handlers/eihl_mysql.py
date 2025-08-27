@@ -79,7 +79,7 @@ def print_sql_query(db_conn, query, params):
         print("ERROR unable to print SQL! No DB connection available!\n")
 
 
-def fetch_all_db_data(query: MySQLQuery or str = None, params: dict = None,
+def fetch_all_db_data(query: MySQLQuery | str = None, params: dict = None,
                       table: str = None, columns: list = None):
     try:
         if query is None:
@@ -158,8 +158,8 @@ def get_dup_records(params: dict = None, query=None, table: str = None,
 
 # TODO Create team season ID table in DB to hold team ID for each season
 # TODO create team ID converter in data source handler
-def get_db_season_ids(seasons: list[str] = None, year_from: int or datetime.year = None,
-                      year_to: int or datetime.year = None):
+def get_db_season_ids(seasons: list[str] = None, year_from: int | datetime = None,
+                      year_to: int | datetime = None):
     season_ids = None
     if seasons is None:
         # get all EIHL season ids to iterate through

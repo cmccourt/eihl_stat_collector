@@ -17,7 +17,7 @@ class MatchInfo:
     away_team_info: dict = field(default_factory=dict, kw_only=True)
 
 
-def get_date_range_from_str_list(text: list or tuple):
+def get_date_range_from_str_list(text: list | tuple):
     start_date = None
     end_date = None
     for dt_regex, dt_fmt in ((r"([0-9]{2}/[0-9]{2}/[0-9]{4})", '%d/%m/%Y'),
@@ -32,7 +32,7 @@ def get_date_range_from_str_list(text: list or tuple):
     return start_date, end_date
 
 
-def extract_date_from_str(text: str, fmt: str) -> datetime or None:
+def extract_date_from_str(text: str, fmt: str) -> datetime | None:
     try:
         text_dt = datetime.strptime(text, fmt)
         return text_dt

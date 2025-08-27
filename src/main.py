@@ -20,7 +20,7 @@ website: Website = EIHLWebsite()
 
 @dataclass(init=True)
 class CMDOption:
-    help: str or None
+    help: str | None
     action: Callable
     params: Tuple = field(default=())
 

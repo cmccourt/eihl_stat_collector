@@ -5,10 +5,10 @@ from typing import Protocol
 class Website(Protocol):
 
     def get_list_of_matches(self, url: str = None, start_date: datetime = datetime.min,
-                            end_date: datetime = datetime.max, teams: list or tuple = None):
+                            end_date: datetime = datetime.max, teams: list | tuple = None):
         pass
 
-    def get_match_info(self, match_date: datetime = None, teams: list or tuple = None):
+    def get_match_info(self, match_date: datetime = None, teams: list | tuple = None):
         pass
 
     def extract_match_info(self, match_url: str):
@@ -43,5 +43,5 @@ class Website(Protocol):
 
     def get_list_of_matches_from_url(self, url: str = None,
                                      start_date: datetime = datetime.min,
-                                     end_date: datetime = datetime.max, teams: list or tuple = None):
+                                     end_date: datetime = datetime.max, teams: list | tuple = None):
         pass

@@ -37,7 +37,7 @@ def update_db_match_score(match_info):
 
 
 def insert_matches(website, start_date: datetime = None, end_date: datetime = None,
-                   teams: list or tuple = None):
+                   teams: list | tuple = None):
     gamecentre_urls = website.get_all_gamecentre_urls()
     # matches = website.get_list_of_matches_from_url(start_date=start_date, end_date=end_date, teams=teams)
     try:
@@ -56,7 +56,7 @@ def insert_matches(website, start_date: datetime = None, end_date: datetime = No
 
 
 def update_matches(website, start_date: datetime = None, end_date: datetime = None,
-                   teams: list or tuple = None):
+                   teams: list | tuple = None):
     dup_clause = ((Field("match_date") == Parameter("%(match_date)s")) &
                   (Field("home_team") == Parameter("%(home_team)s")) &
                   (Field("away_team") == Parameter("%(away_team)s")))

@@ -49,7 +49,7 @@ class EIHLWebsite(Website):
         return champ_list
 
     def get_start_end_dates_from_gamecentre(self, schedule_url: str = None) -> tuple[
-        datetime or None, datetime or None]:
+        datetime | None, datetime | None]:
         if schedule_url is None:
             schedule_url = self.eihl_schedule_url
         # Get container that holds matches
@@ -85,7 +85,7 @@ class EIHLWebsite(Website):
         match_team_stats = {"home_team": home_team_stats, "away_team": away_team_stats}
         return match_team_stats
 
-    def get_match_info(self, match_info: dict = None, match_date: datetime = None, teams: list or tuple = None):
+    def get_match_info(self, match_info: dict = None, match_date: datetime = None, teams: list | tuple = None):
         if match_info is None:
             match_info = {}
         match_id = match_info.get("eihl_web_match_id", None)
@@ -124,7 +124,7 @@ class EIHLWebsite(Website):
                 continue
             i += 1
 
-    def get_eihl_web_match_id(self, url: str) -> int or None:
+    def get_eihl_web_match_id(self, url: str) -> int | None:
         game_web_id = re.findall(r"(?<=/game/).*$", url)
         try:
             game_web_id = game_web_id[0]
@@ -190,7 +190,7 @@ class EIHLWebsite(Website):
 
     def get_list_of_matches_from_url(self, url: str = None,
                                      start_date: datetime = datetime.min,
-                                     end_date: datetime = datetime.max, teams: list or tuple = None):
+                                     end_date: datetime = datetime.max, teams: list | tuple = None):
         if teams is None:
             teams = []
         if url is None:
