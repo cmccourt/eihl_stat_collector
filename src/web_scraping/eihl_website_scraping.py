@@ -72,20 +72,21 @@ class EIHLWebsite(Website):
         stats_html: bs4.Tag = html_container.find("div")
         # E.g. of values that match Regex: 20, 20.0, 20%, 20.06%
         stat_float_regex = r"(\d+(\.\d+)?%)|(\d+(\.\d+))|(\d+)"
-        if "TEAM STATS" in stats_html.find("h2").get_text().upper():
-            # Found the team stats section
-            stat_list = list(stats_html.get_text("|", strip=True).split("|"))
-            if stat_list[0].lower() == "team stats":
-                del stat_list[0]
-            self.get_team_stats_from_list(away_team_stats, home_team_stats, stat_float_regex, stat_list)
+        try:
+            if "TEAM STATS" in stats_html.find("h2").get_text().upper():
+                # Found the team stats section
+                stat_list = list(stats_html.get_text("|", strip=True).split("|"))
+                if stat_list[0].lower() == "team stats":
+                    del stat_list[0]
+                self.get_team_stats_from_list(away_team_stats, home_team_stats, stat_float_regex, stat_list)
+        except AttributeError:
+            traceback.print_exc()
 
         match_team_stats = {"home_team": home_team_stats, "away_team": away_team_stats}
         return match_team_stats
 
-    # TODO to be implemented
     def get_match_info(self, match_info: dict = None, match_date: datetime = None, teams: list or tuple = None):
-        match_url = None
-        if match_url is None:
+        if match_info is None:
             match_info = {}
         match_id = match_info.get("eihl_web_match_id", None)
         match_url = f"{self.eihl_match_url}{match_id}"

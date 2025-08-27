@@ -23,10 +23,10 @@ def get_db_matches(teams: list[str] = None,
 
 
 def update_db_match_score(match_info):
-    dup_clause = ((Field("match_date") == Parameter("%(match_date)s")) &
-                  (Field("home_team") == Parameter("%(home_team)s")) &
-                  (Field("away_team") == Parameter("%(away_team)s")))
-    dup_records = get_dup_records(match_info, table="match", where_clause=dup_clause)
+    dup_clause = ((Field("match_date") == match_info.get("match_date", None).strftime("%Y-%m-%d %H:%M:%S")) &
+                  (Field("home_team") == match_info.get("home_team", None)) &
+                  (Field("away_team") == match_info.get("away_team", None)))
+    dup_records = get_dup_records(table="match", where_clause=dup_clause)
 
     if dup_records and \
             (dup_records[0].get("home_score", None) is None or dup_records[0].get("away_score", None) is None):
@@ -36,7 +36,7 @@ def update_db_match_score(match_info):
         print(f"ERROR cannot find {match_info} in DB")
 
 
-def insert_matches(website, start_date: datetime, end_date: datetime,
+def insert_matches(website, start_date: datetime = None, end_date: datetime = None,
                    teams: list or tuple = None):
     gamecentre_urls = website.get_all_gamecentre_urls()
     # matches = website.get_list_of_matches_from_url(start_date=start_date, end_date=end_date, teams=teams)

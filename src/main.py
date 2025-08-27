@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Callable, Tuple
 
-from pypika import Query, Field, Table
+from pypika import Query, Field, Table, MySQLQuery
 
 from src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, insert_data
 # from settings.settings import eihl_match_url
@@ -15,8 +15,6 @@ from src.team_stats import update_match_team_stats
 from src.web_scraping.eihl_website_scraping import EIHLWebsite
 from src.web_scraping.website import Website
 
-# TODO make builder function to get data source handler
-# ds_handler = EIHLPostgresHandler()
 website: Website = EIHLWebsite()
 
 
@@ -94,16 +92,19 @@ def insert_new_matches(start_date: datetime = datetime.min, end_date: datetime =
 
 def update_recent_data():
     refresh_championships()
-    match_query = Query.from_("match").select("*")
+    match_query = MySQLQuery.from_("match").select("*")
 
     matches = fetch_all_db_data(
         str(match_query.where((Field("home_score").isnull()) | (Field("away_score").isnull()))))
     if len(matches) == 0:
         print("There are no matches to update!")
         return
+
     for match in matches:
         match_info = website.get_match_info(match)
         update_db_match_score(match_info)
+
+    insert_matches(website)
 
     match_table = Table("match")
     update_empty_team_stats(match_table, match_query)
@@ -121,9 +122,9 @@ def update_empty_player_stats(match_query, match_table):
         .groupby(match_table.match_id, player_stats_table.goals, player_stats_table.shutouts,
                  match_table.home_score, match_table.away_score) \
         .having(
-        ((player_stats_table.goals == 0) & (player_stats_table.shutouts == 0)) |
-        (player_stats_table.saves == 0) | (match_table.home_score.isnull()) |
-        (match_table.away_score.isnull()))
+        ((player_stats_table.goals.isnull()) & (player_stats_table.shutouts.isnull()) |
+         (player_stats_table.goals == 0) & (player_stats_table.shutouts == 0)) |
+        (match_table.home_score.isnull()) | (match_table.away_score.isnull()))
     miss_player_stat_query = str(match_query.where(Field("match_id").isin(player_sub_query)))
     missing_player_stat_games = fetch_all_db_data(miss_player_stat_query)
     # missing_player_stat_games = db_handler.fetch_all_data( """SELECT * FROM `match` WHERE match_id IN (SELECT
@@ -161,7 +162,9 @@ def update_empty_team_stats(match_table, match_query):
         .on(match_table.match_id == team_stats_table.match_id) \
         .groupby(match_table.match_id, team_stats_table.shots, team_stats_table.saves,
                  match_table.home_score, match_table.away_score) \
-        .having((team_stats_table.shots == 0) | (team_stats_table.saves == 0) | (match_table.home_score.isnull()) |
+        .having((team_stats_table.shots.isnull()) & (team_stats_table.saves.isnull()) |
+                (team_stats_table.shots == 0) | (team_stats_table.saves == 0) |
+                (match_table.home_score.isnull()) |
                 (match_table.away_score.isnull()))
     missing_team_stat_games = fetch_all_db_data(
         str(match_query.where(Field("match_id").isin(team_sub_query))))
@@ -173,9 +176,8 @@ def update_empty_team_stats(match_table, match_query):
 
 
 class Options(Enum):
-    # TODO Create main function to limit number of matches to find
     UPDATE_PLAYER_MATCH_STATS = CMDOption("Update player's stats for a particular match",
-                                          insert_player_stats, (datetime.min, datetime.max))
+                                          insert_player_stats, (datetime.today(), datetime.max))
     UPDATE_DB_MATCH = CMDOption("Update score for a particular match in the database",
                                 lambda x: "This will be implemented in the future")
     UPDATE_TEAM_MATCH_STATS = CMDOption("Update team's stats for a particular match", insert_team_match_stats,
@@ -198,7 +200,7 @@ def main():
     is_exit = False
     while not is_exit:
         # user_input = input("What would you like to do? ->")
-        user_input = "UPDATE_TEAM_MATCH_STATS"
+        user_input = "UPDATE_RECENT"
         if user_input is None:
             continue
         try:

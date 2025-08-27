@@ -37,3 +37,11 @@ class Website(Protocol):
 
     def get_team_stats_url_from_main_game_page(self, match_url):
         pass
+
+    def get_all_gamecentre_urls(self):
+        pass
+
+    def get_list_of_matches_from_url(self, url: str = None,
+                                     start_date: datetime = datetime.min,
+                                     end_date: datetime = datetime.max, teams: list or tuple = None):
+        pass
