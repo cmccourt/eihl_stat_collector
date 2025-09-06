@@ -89,7 +89,6 @@ def insert_new_matches(start_date: datetime = datetime.min, end_date: datetime =
         insert_matches(website, start_date, end_date, teams)
 
 
-
 def update_recent_data():
     refresh_championships()
     match_query = MySQLQuery.from_("match").select("*")
@@ -101,7 +100,7 @@ def update_recent_data():
         return
 
     for match in matches:
-        match_info = website.get_match_info(match)
+        match_info = website.extract_match_info(match.get("match_url", None))
         update_db_match_score(match_info)
 
     insert_matches(website)

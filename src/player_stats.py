@@ -72,10 +72,7 @@ def player_stats_consumer(stat_queue, website: Website):
         if match_info is None:
             break
         match_url = match_info.get("match_url", None)
-        if match_url is None:
-            match_url = website.get_match_stats_url(match_info["eihl_web_match_id"])
-        else:
-            match_url = website.get_match_stats_url_from_main_game_page(match_url)
+        match_url = website.get_match_stats_url(match_url)
         try:
             all_player_stats = get_player_stats(website, match_info, match_url)
             for team_player_stats in all_player_stats:

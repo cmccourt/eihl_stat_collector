@@ -117,9 +117,7 @@ def insert_data(table_name: str, new_val_dict: dict):
     try:
         # print(db_cur.mogrify(query, player_match_stats))
         execute_query(query)
-    except IntegrityError:
-        raise
-    except DatabaseError:
+    except (IntegrityError, DatabaseError):
         raise
 
 

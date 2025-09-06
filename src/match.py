@@ -1,11 +1,15 @@
 import traceback
 from datetime import datetime
 from pprint import pprint
+from queue import Queue
+from threading import Thread
 
+from mysql.connector import IntegrityError
 from pypika import Field, Parameter, MySQLQuery
 
 # TODO Create Protocol for DB handler
 from src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, update_data, insert_data
+from src.web_scraping.website import Website
 
 
 def get_db_matches(teams: list[str] = None,
@@ -60,7 +64,7 @@ def update_matches(website, start_date: datetime = None, end_date: datetime = No
     dup_clause = ((Field("match_date") == Parameter("%(match_date)s")) &
                   (Field("home_team") == Parameter("%(home_team)s")) &
                   (Field("away_team") == Parameter("%(away_team)s")))
-    matches = website.get_list_of_matches_from_url(start_date=start_date, end_date=end_date, teams=teams)
+    matches = website.get_matches(start_date=start_date, end_date=end_date, teams=teams)
     try:
         # for season in season_ids:
         #     season_id = season["eihl_web_id"]

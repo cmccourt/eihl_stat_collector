@@ -73,7 +73,7 @@ class EIHLWebsite(Website):
         # E.g. of values that match Regex: 20, 20.0, 20%, 20.06%
         stat_float_regex = r"(\d+(\.\d+)?%)|(\d+(\.\d+))|(\d+)"
         try:
-            if "TEAM STATS" in stats_html.find("h2").get_text().upper():
+            if stats_html.find("h2") is not None and "TEAM STATS" in stats_html.find("h2").get_text().upper():
                 # Found the team stats section
                 stat_list = list(stats_html.get_text("|", strip=True).split("|"))
                 if stat_list[0].lower() == "team stats":
@@ -84,14 +84,6 @@ class EIHLWebsite(Website):
 
         match_team_stats = {"home_team": home_team_stats, "away_team": away_team_stats}
         return match_team_stats
-
-    def get_match_info(self, match_info: dict = None, match_date: datetime = None, teams: list | tuple = None):
-        if match_info is None:
-            match_info = {}
-        match_id = match_info.get("eihl_web_match_id", None)
-        match_url = f"{self.eihl_match_url}{match_id}"
-        match_info = self.extract_match_info(match_url)
-        return match_info
 
     def get_team_stats_from_list(self, away_team_stats, home_team_stats, stat_float_regex, stat_list):
         def assign_stat_to_team(header, team_stats, stats=None, stat_index=None, value=None):
@@ -188,14 +180,7 @@ class EIHLWebsite(Website):
         match_info["away_team"] = " ".join([x for x in away_team_info.find("a").stripped_strings])
         return match_info
 
-    def get_list_of_matches_from_url(self, url: str = None,
-                                     start_date: datetime = datetime.min,
-                                     end_date: datetime = datetime.max, teams: list | tuple = None):
-        if teams is None:
-            teams = []
-        if url is None:
-            url = self.eihl_schedule_url
-
+    def extract_matches_from_url(self, url):
         res_beaus = get_html_content(url)
 
         html_content = res_beaus.find("body").find("main").find(class_="wrapper")
@@ -206,15 +191,9 @@ class EIHLWebsite(Website):
         match_date = None
         for tag in html_content:
             tag_text = tag.get_text()
-
             game_date = extract_date_from_str(tag_text, gamecentre_date_fmt)
             if game_date is not None and match_date != tag_text:
                 match_date = game_date
-            if match_date is not None:
-                if start_date > match_date or (teams and not [x for x in teams if x.lower() in tag_text.lower()]):
-                    continue
-                elif match_date > end_date:
-                    break
             if tag.name == "div" and len(tag.find_all()) > 0:
                 # TODO should the data storage class handle column name conversions?
                 match_info = self.extract_team_score_from_tag(tag)
@@ -232,6 +211,26 @@ class EIHLWebsite(Website):
                     # No time present. Create time placeholder
                     match_info["match_date"] = match_date
                 matches.append(match_info)
+        return matches
+
+    def get_matches(self, url: str = None,
+                    start_date: datetime = datetime.min,
+                    end_date: datetime = datetime.max, teams: list | tuple = None):
+
+        matches = []
+        if teams is None:
+            teams = []
+        if url is None:
+            gamecentre_urls = self.get_all_gamecentre_urls()
+            # matches = website.get_list_of_matches_from_url(start_date=start_date, end_date=end_date, teams=teams)
+            for url in gamecentre_urls:
+                url_matches = self.extract_matches_from_url(url)
+                if url_matches:
+                    matches.append(url_matches)
+        else:
+            matches = self.extract_matches_from_url(url)
+        # TODO filter out matches on dates and teams
+        matches = [x for x in matches if start_date <= x["match_date"] <= end_date]
         return matches
 
     def extract_team_score_from_tag(self, tag) -> dict:
@@ -395,14 +394,10 @@ class EIHLWebsite(Website):
             print(f"Cannot find season ID in url: {url}")
         return None
 
-    def get_match_stats_url_from_game_id(self, match_id):
-        match_stats_url = f"{self.eihl_match_url}{match_id}/stats"
-        return match_stats_url
-
-    def get_match_stats_url_from_main_game_page(self, url):
+    def get_match_stats_url(self, url):
         return f"{url}/stats"
 
-    def get_team_stats_url_from_main_game_page(self, url):
+    def get_team_stats_url(self, url):
         return f"{url}/team-stats"
 
     def get_gamecentre_url(self, season_id: int = None, team_id: int = None, month_id: int = None,
