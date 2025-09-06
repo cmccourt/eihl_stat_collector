@@ -40,23 +40,71 @@ def update_db_match_score(match_info):
         print(f"ERROR cannot find {match_info} in DB")
 
 
-def insert_matches(website, start_date: datetime = None, end_date: datetime = None,
-                   teams: list | tuple = None):
-    gamecentre_urls = website.get_all_gamecentre_urls()
-    # matches = website.get_list_of_matches_from_url(start_date=start_date, end_date=end_date, teams=teams)
-    try:
-        for url in gamecentre_urls:
-            matches = website.get_list_of_matches_from_url(url=url)
+def get_match_producer(url_queue, match_queue, website: Website):
+    print("Producer: Running")
+    while True:
+        url = url_queue.get(block=True)
+        if url is None:
+            break
+        try:
+            matches = website.get_matches(url=url)
             for match in matches:
-                try:
-                    insert_data("match", match)
-                except Exception:
-                    # TODO create cleaner error message for duplicate entries
-                    traceback.print_exc()
-                else:
-                    pprint(match)
+                match_queue.put(match)
+        except Exception:
+            traceback.print_exc()
+        finally:
+            url_queue.task_done()
+    print('Producer: Done')
+
+
+def get_match_consumer(match_queue, website: Website):
+    print("Consumer: Running")
+    while True:
+        match = match_queue.get(block=True)
+        if match is None or match == []:
+            break
+        try:
+            insert_data("match", match)
+        except IntegrityError:
+            print(f"Match: {pprint(match)} already exists in DB")
+        except Exception:
+            traceback.print_exc()
+        else:
+            pprint(match)
+        finally:
+            match_queue.task_done()
+    print('Consumer: Done')
+
+
+def insert_matches(website, start_date: datetime = None, end_date: datetime = None,
+                   teams: list | tuple = None, num_threads=5):
+    # TODO change this function so it calls Website.get_matches
+    # TODO create multi thread function to get matches
+    gamecentre_urls = website.get_all_gamecentre_urls()
+    url_queue = Queue()
+    match_queue = Queue()
+    for url in gamecentre_urls:
+        url_queue.put(url)
+    producers = [Thread(target=get_match_producer, args=(url_queue, match_queue, website)) for _ in range(num_threads)]
+    # TODO implement logging
+    try:
+        for producer in producers:
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            producer.daemon = True
+            producer.start()
     except Exception:
-        traceback.print_exc()
+        print("PRODUCER THREADING ERROR!")
+    url_queue.join()
+    consumers = [Thread(target=get_match_consumer, args=(match_queue, website)) for _ in range(num_threads)]
+    try:
+        for consumer in consumers:
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            consumer.daemon = True
+            consumer.start()
+    except Exception:
+        print("CONSUMER THREADING ERROR!")
+    match_queue.join()
+    print("All Matches inserted successfully!!!")
 
 
 def update_matches(website, start_date: datetime = None, end_date: datetime = None,
