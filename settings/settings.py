@@ -5,10 +5,17 @@ postgres_db_config = {
     "hostname": "localhost",
     "port": "5432"}
 
-mysql_db_config = {
+mysql_prd_db_config = {
     "user": "root",
     "password": "6Lo5weLL",
     "database": "eihlstats",
+    "host": "localhost",
+    "port": "3306"}
+
+mysql_dev_db_config = {
+    "user": "root",
+    "password": "6Lo5weLL",
+    "database": "eihlstats_dev",
     "host": "localhost",
     "port": "3306"}
 

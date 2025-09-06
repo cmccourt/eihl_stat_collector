@@ -6,7 +6,8 @@ from mysql.connector import connect, connection, IntegrityError, DatabaseError
 from pypika import MySQLQuery, Field, Criterion
 from sqlalchemy import create_engine
 
-from settings.settings import mysql_db_config
+# TODO change the config so it is imported from a static file
+from settings.settings import mysql_dev_db_config
 
 
 class mysql_connection(object):
@@ -14,7 +15,7 @@ class mysql_connection(object):
 
     def __init__(self, db_config=None):
         if db_config is None:
-            self.db_config = mysql_db_config
+            self.db_config = mysql_dev_db_config
         self.db_conn: connection = None
 
     def __enter__(self):
