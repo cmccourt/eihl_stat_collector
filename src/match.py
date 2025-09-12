@@ -39,7 +39,7 @@ def update_db_match_score(match_info):
         print(f"ERROR cannot find {match_info} in DB")
 
 
-def get_match_producer(url_queue, match_queue, website: Website):
+def get_matches_from_gamecentres_producer(url_queue, match_queue, website: Website):
     print("Producer: Running")
     while True:
         url = url_queue.get(block=True)
@@ -49,6 +49,22 @@ def get_match_producer(url_queue, match_queue, website: Website):
             matches = website.get_matches(url=url)
             for match in matches:
                 match_queue.put(match)
+        except Exception:
+            traceback.print_exc()
+        finally:
+            url_queue.task_done()
+    print('Producer: Done')
+
+
+def get_match_from_website_producer(url_queue, match_queue, website: Website):
+    print("Producer: Running")
+    while True:
+        url = url_queue.get(block=True)
+        if url is None:
+            break
+        try:
+            match_info = website.extract_match_info(url)
+            match_queue.put(match_info)
         except Exception:
             traceback.print_exc()
         finally:
@@ -75,6 +91,28 @@ def insert_match_consumer(match_queue, website: Website):
     print('Consumer: Done')
 
 
+def update_db_match_consumer(match_queue, dup_clause):
+    print("Consumer: Running")
+    while True:
+        match = match_queue.get(block=True)
+        if match is None or match == []:
+            break
+        try:
+            dup_records = get_dup_records(params=match, table="match", where_clause=dup_clause)
+            if len(dup_records) == 1:
+                update_data("match", match, where_clause=dup_clause)
+            else:
+                # TODO Implement logging for this scenario
+                print(f"More than 1 duplicate for match: {match}")
+        except Exception:
+            traceback.print_exc()
+        else:
+            pprint(match)
+        finally:
+            match_queue.task_done()
+    print('Consumer: Done')
+
+
 def insert_matches(website, start_date: datetime = None, end_date: datetime = None,
                    teams: list | tuple = None, num_threads=5):
     gamecentre_urls = website.get_all_gamecentre_urls()
@@ -82,7 +120,8 @@ def insert_matches(website, start_date: datetime = None, end_date: datetime = No
     match_queue = Queue()
     for url in gamecentre_urls:
         url_queue.put(url)
-    producers = [Thread(target=get_match_producer, args=(url_queue, match_queue, website)) for _ in range(num_threads)]
+    producers = [Thread(target=get_matches_from_gamecentres_producer, args=(url_queue, match_queue, website)) for _ in
+                 range(num_threads)]
     # TODO implement logging
     try:
         for producer in producers:
@@ -104,17 +143,23 @@ def insert_matches(website, start_date: datetime = None, end_date: datetime = No
     print("All Matches inserted successfully!!!")
 
 
-def update_matches(website, start_date: datetime = None, end_date: datetime = None,
-                   teams: list | tuple = None, num_threads=None):
+def update_matches(website, matches: list[dict] = None, start_date: datetime = None, end_date: datetime = None,
+                   teams: list | tuple = None, num_threads=5):
     dup_clause = ((Field("match_date") == Parameter("%(match_date)s")) &
                   (Field("home_team") == Parameter("%(home_team)s")) &
                   (Field("away_team") == Parameter("%(away_team)s")))
-    gamecentre_urls = website.get_all_gamecentre_urls()
     url_queue = Queue()
     match_queue = Queue()
-    for url in gamecentre_urls:
-        url_queue.put(url)
-    producers = [Thread(target=get_match_producer, args=(url_queue, match_queue, website)) for _ in range(num_threads)]
+
+    if matches is None:
+        gamecentre_urls = website.get_all_gamecentre_urls()
+        for url in gamecentre_urls:
+            url_queue.put(url)
+    else:
+        for match in matches:
+            url_queue.put(match.get("match_url", None))
+    producers = [Thread(target=get_match_from_website_producer, args=(url_queue, match_queue, website)) for _ in
+                 range(num_threads)]
     # TODO implement logging
     try:
         for producer in producers:
@@ -125,7 +170,7 @@ def update_matches(website, start_date: datetime = None, end_date: datetime = No
         print("PRODUCER THREADING ERROR!")
     url_queue.join()
     # matches = website.get_matches(start_date=start_date, end_date=end_date, teams=teams)
-    consumers = [Thread(target=update_match_consumer, args=(match_queue, dup_clause)) for _ in range(num_threads)]
+    consumers = [Thread(target=update_db_match_consumer, args=(match_queue, dup_clause)) for _ in range(num_threads)]
     try:
         for consumer in consumers:
             # Setting daemon to True will let the main thread exit even though the workers are blocking
