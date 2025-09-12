@@ -77,10 +77,5 @@ def insert_players_stats_to_db(website, matches: list[dict], num_threads=5):
             consumer.start()
     except Exception:
         print("THREADING ERROR!")
-    # producer = Thread(target=player_stats_producer, args=(matches_queue, matches))
-    # producer.start()
-    # producer.join()
-    # for consumer in consumers:
-    #     consumer.join()
     matches_queue.join()
     print("Player match stats insertion Successful!!!")

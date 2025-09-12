@@ -54,10 +54,13 @@ def get_data_range() -> tuple[datetime, datetime]:
 
 def refresh_db():
     refresh_championships()
+
     insert_new_matches()
     update_matches(website)
-    update_match_team_stats()
-    insert_players_stats_to_db()
+
+    matches = get_db_matches()
+    update_match_team_stats(website, matches)
+    insert_players_stats_to_db(website, matches)
 
 
 def refresh_championships():
@@ -76,6 +79,8 @@ def refresh_championships():
             try:
                 if len(get_dup_records(params=champ, table="championship")) == 0:
                     insert_data("championship", champ)
+            except IntegrityError:
+                print(f"Championship: {champ} already exists in DB")
             except Exception:
                 traceback.print_exc()
             else:
@@ -175,7 +180,7 @@ def update_empty_team_stats(match_table, match_query):
 
 class Options(Enum):
     UPDATE_PLAYER_MATCH_STATS = CMDOption("Update player's stats for a particular match",
-                                          insert_player_stats, (datetime.today(), datetime.max))
+                                          insert_player_stats, (datetime.min, datetime.max))
     UPDATE_DB_MATCH = CMDOption("Update score for a particular match in the database",
                                 lambda x: "This will be implemented in the future")
     UPDATE_TEAM_MATCH_STATS = CMDOption("Update team's stats for a particular match", insert_team_match_stats,
