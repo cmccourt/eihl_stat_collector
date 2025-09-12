@@ -2,28 +2,21 @@ import traceback
 from datetime import datetime
 from typing import Any, Sequence
 
-from mysql.connector import connect, connection, IntegrityError, DatabaseError
+from mysql.connector import IntegrityError, DatabaseError, pooling
 from pypika import MySQLQuery, Field, Criterion
-from sqlalchemy import create_engine
 
 # TODO change the config so it is imported from a static file
 from settings.settings import mysql_dev_db_config
+
+db_config = mysql_dev_db_config
+cnxpool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=10, **db_config)
 
 
 class mysql_connection(object):
     """MySQL DB connection"""
 
-    def __init__(self, db_config=None):
-        if db_config is None:
-            self.db_config = mysql_dev_db_config
-        self.db_conn: connection = None
-
     def __enter__(self):
-        self.db_conn = connect(**self.db_config)
-        self.db_engine = create_engine(
-            f"mysql+pymysql://{self.db_config.get('un', '')}:{self.db_config.get('pw', '')}@"
-            f"{self.db_config.get('host', '')}:{self.db_config.get('port', '')}/{self.db_config.get('db', '')}",
-            echo=True)
+        self.db_conn = cnxpool.get_connection()
         return self.db_conn
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -103,6 +96,8 @@ def execute_query(query, params=None):
         except IntegrityError:
             db_conn.rollback()
             raise
+        except DatabaseError:
+            traceback.print_exc()
         except Exception:
             db_conn.rollback()
             traceback.print_exc()
