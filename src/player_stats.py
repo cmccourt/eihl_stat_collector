@@ -3,6 +3,7 @@ from queue import Queue
 from threading import Thread
 
 import pandas as pd
+from mysql.connector import IntegrityError
 
 from src.data_handlers.eihl_mysql import insert_data, match_player_stats_cols
 from src.web_scraping.website import Website
@@ -21,13 +22,8 @@ def insert_player_stats_to_db(*player_match_stats: dict):
             print(f"Match ID: {match_id}, team: {team_name}, player {player_name} stats to be inserted!")
             insert_data("match_player_stats", player_stats)
             print(f"Match ID: {match_id}, team: {team_name}, player {player_name} inserted successfully!")
-            """if len(get_dup_records(params=player_stats, table="match_player_stats")) == 0:
-                
-                
-            else:
-                print(f"Match ID {match_id} team: {team_name}, player: {player_name} stats already exists in DB.")
-                update_data("match_player_stats", player_stats)
-                print(f"Match ID {match_id} team: {team_name}, player: {player_name} Updated Successfully.")"""
+        except IntegrityError:
+            print(f"Match ID: {match_id}, team: {team_name}, player {player_name} already exists in DB")
         except Exception:
             traceback.print_exc()
 
@@ -47,23 +43,6 @@ def get_player_stats(website: Website, match=None, match_stats_url: str = None) 
     return player_stats
 
 
-"""def producer(fun, *args):
-    print("Producer: Running")
-    fun(*args)
-    print("Producer: Done")
-
-
-def add_match_to_queue(stat_queue: Queue, match: dict, website: Website):
-    try:
-        match_stats_url = website.get_match_stats_url()
-        # build_match_stats_url(match_info.get("eihl_web_match_id", ""))
-        stat_queue.put((match, match_stats_url))
-        # team_stats.apply(insert_team_match_stats, args=(db_cur, db_conn, True), axis=1)
-    except Exception:
-        traceback.print_exc()"""
-
-
-# TODO rework producer/consumer to be more flexible
 def player_stats_consumer(stat_queue, website: Website):
     print("Consumer: Running")
     while True:

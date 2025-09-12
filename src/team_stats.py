@@ -2,6 +2,8 @@ import traceback
 from queue import Queue
 from threading import Thread
 
+from mysql.connector import IntegrityError
+
 from src.data_handlers.eihl_mysql import insert_data, match_team_stats_cols
 from src.web_scraping.website import Website
 
@@ -39,12 +41,15 @@ def insert_team_match_stats_to_db(team_match_stats: dict):
         insert_data("match_team_stats", team_match_stats)
     except TypeError:
         traceback.print_exc()
+    except IntegrityError:
+        print(f"Match ID: {match_id} team: {team_name} already exists in DB")
     else:
         print(f"Match ID: {match_id} team: {team_name} stats inserted!")
 
 
 def update_match_team_stats(website: Website, matches: list[dict], num_threads=5):
     matches_queue = Queue()
+
     for match in matches:
         matches_queue.put(match)
 
@@ -57,10 +62,5 @@ def update_match_team_stats(website: Website, matches: list[dict], num_threads=5
             consumer.start()
     except Exception:
         print("THREADING ERROR!")
-    # producer = Thread(target=player_stats_producer, args=(matches_queue, matches))
-    # producer.start()
-    # producer.join()
-    # for consumer in consumers:
-    #     consumer.join()
     matches_queue.join()
     print("Team match stats insertion Successful!!!")

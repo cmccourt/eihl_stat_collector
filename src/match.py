@@ -7,7 +7,6 @@ from threading import Thread
 from mysql.connector import IntegrityError
 from pypika import Field, Parameter, MySQLQuery
 
-# TODO Create Protocol for DB handler
 from src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, update_data, insert_data
 from src.web_scraping.website import Website
 
@@ -57,7 +56,7 @@ def get_match_producer(url_queue, match_queue, website: Website):
     print('Producer: Done')
 
 
-def get_match_consumer(match_queue, website: Website):
+def insert_match_consumer(match_queue, website: Website):
     print("Consumer: Running")
     while True:
         match = match_queue.get(block=True)
@@ -78,8 +77,6 @@ def get_match_consumer(match_queue, website: Website):
 
 def insert_matches(website, start_date: datetime = None, end_date: datetime = None,
                    teams: list | tuple = None, num_threads=5):
-    # TODO change this function so it calls Website.get_matches
-    # TODO create multi thread function to get matches
     gamecentre_urls = website.get_all_gamecentre_urls()
     url_queue = Queue()
     match_queue = Queue()
@@ -95,7 +92,7 @@ def insert_matches(website, start_date: datetime = None, end_date: datetime = No
     except Exception:
         print("PRODUCER THREADING ERROR!")
     url_queue.join()
-    consumers = [Thread(target=get_match_consumer, args=(match_queue, website)) for _ in range(num_threads)]
+    consumers = [Thread(target=insert_match_consumer, args=(match_queue, website)) for _ in range(num_threads)]
     try:
         for consumer in consumers:
             # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -108,24 +105,33 @@ def insert_matches(website, start_date: datetime = None, end_date: datetime = No
 
 
 def update_matches(website, start_date: datetime = None, end_date: datetime = None,
-                   teams: list | tuple = None):
+                   teams: list | tuple = None, num_threads=None):
     dup_clause = ((Field("match_date") == Parameter("%(match_date)s")) &
                   (Field("home_team") == Parameter("%(home_team)s")) &
                   (Field("away_team") == Parameter("%(away_team)s")))
-    matches = website.get_matches(start_date=start_date, end_date=end_date, teams=teams)
+    gamecentre_urls = website.get_all_gamecentre_urls()
+    url_queue = Queue()
+    match_queue = Queue()
+    for url in gamecentre_urls:
+        url_queue.put(url)
+    producers = [Thread(target=get_match_producer, args=(url_queue, match_queue, website)) for _ in range(num_threads)]
+    # TODO implement logging
     try:
-        # for season in season_ids:
-        #     season_id = season["eihl_web_id"]
-        #     season_gamecentre_url = website.get_gamecentre_url(season_id, team_ids, month_ids)
-        #     season_matches = website.get_list_of_matches(season_gamecentre_url)
-        # update_match_scores(db_handler, season_matches)
-        for match in matches:
-            pprint(match)
-            dup_records = get_dup_records(params=match, table="match", where_clause=dup_clause)
-            if len(dup_records) == 1:
-                update_data("match", match, where_clause=dup_clause)
-            else:
-                # TODO Implement logging for this scenario
-                print(f"More than 1 duplicate for match: {match}")
+        for producer in producers:
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            producer.daemon = True
+            producer.start()
     except Exception:
-        traceback.print_exc()
+        print("PRODUCER THREADING ERROR!")
+    url_queue.join()
+    # matches = website.get_matches(start_date=start_date, end_date=end_date, teams=teams)
+    consumers = [Thread(target=update_match_consumer, args=(match_queue, dup_clause)) for _ in range(num_threads)]
+    try:
+        for consumer in consumers:
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            consumer.daemon = True
+            consumer.start()
+    except Exception:
+        print("CONSUMER THREADING ERROR!")
+    match_queue.join()
+    print("All Matches updated successfully!!!")
