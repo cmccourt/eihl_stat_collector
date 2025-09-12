@@ -416,7 +416,6 @@ class EIHLWebsite(Website):
         return gc_url
 
     def extract_match_stats(self, match_url):
-        print(f"\nNext match is {match_url}\n")
         match_stats = self.extract_player_stats(match_url)
         # Check if the team score table came through
         if len(match_stats) > 4 and len(match_stats[0].columns) <= 4:
