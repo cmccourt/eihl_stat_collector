@@ -99,9 +99,7 @@ def update_recent_data():
         print("There are no matches to update!")
         return
 
-    for match in matches:
-        match_info = website.extract_match_info(match.get("match_url", None))
-        update_db_match_score(match_info)
+    update_matches(website, matches)
 
     insert_matches(website)
 
