@@ -7,14 +7,14 @@ from typing import Callable, Tuple
 from mysql.connector import IntegrityError
 from pypika import Query, Field, Table, MySQLQuery
 
-from src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, insert_data
+from backend.src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, insert_data
 # from settings.settings import eihl_match_url
 # from src.data_handlers.eihl_postgres import EIHLPostgresHandler
-from src.match import get_db_matches, update_matches, insert_matches
-from src.player_stats import insert_players_stats_to_db
-from src.team_stats import update_match_team_stats
-from src.web_scraping.eihl_website_scraping import EIHLWebsite
-from src.web_scraping.website import Website
+from backend.src.match import get_db_matches, update_matches, insert_matches
+from backend.src.player_stats import insert_players_stats_to_db
+from backend.src.team_stats import update_match_team_stats
+from backend.src.web_scraping.eihl_website_scraping import EIHLWebsite
+from backend.src.web_scraping.website import Website
 
 website: Website = EIHLWebsite()
 

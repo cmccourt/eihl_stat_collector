@@ -4,8 +4,8 @@ from threading import Thread
 
 from mysql.connector import IntegrityError
 
-from src.data_handlers.eihl_mysql import insert_data, match_team_stats_cols
-from src.web_scraping.website import Website
+from backend.src.data_handlers.eihl_mysql import insert_data, match_team_stats_cols
+from backend.src.web_scraping.website import Website
 
 
 def team_stats_consumer(stat_queue, website: Website):

@@ -2,9 +2,9 @@ from datetime import datetime
 
 import pytest
 
-from settings.settings import eihl_schedule_url
-from src.web_scraping.eihl_website_scraping import extract_team_match_stats, get_eihl_championship_options, \
+from backend.src.web_scraping.eihl_website_scraping import extract_team_match_stats, get_eihl_championship_options, \
     get_start_end_dates_from_gamecentre, get_gamecentre_team_id, get_match_info_from_match_page
+from settings.settings import eihl_schedule_url
 
 
 @pytest.mark.parametrize("match_url,expected",

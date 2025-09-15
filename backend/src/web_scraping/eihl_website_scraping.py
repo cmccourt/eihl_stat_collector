@@ -11,8 +11,9 @@ from pandas import DataFrame
 
 # from src.data_handlers.eihl_mysql import EIHLMysqlHandler
 # from settings.settings import eihl_schedule_url, eihl_match_url
-from src.utils import extract_date_from_str, extract_float_from_str, get_html_content, get_date_range_from_str_list
-from src.web_scraping.website import Website
+from backend.src.utils import extract_date_from_str, extract_float_from_str, get_html_content, \
+    get_date_range_from_str_list
+from backend.src.web_scraping.website import Website
 
 
 class EIHLWebsite(Website):

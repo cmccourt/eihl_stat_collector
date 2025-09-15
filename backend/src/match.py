@@ -7,8 +7,8 @@ from threading import Thread
 from mysql.connector import IntegrityError
 from pypika import Field, Parameter, MySQLQuery
 
-from src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, update_data, insert_data
-from src.web_scraping.website import Website
+from backend.src.data_handlers.eihl_mysql import fetch_all_db_data, get_dup_records, update_data, insert_data
+from backend.src.web_scraping.website import Website
 
 
 def get_db_matches(teams: list[str] = None,
