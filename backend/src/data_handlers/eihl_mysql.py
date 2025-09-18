@@ -2,7 +2,7 @@ import traceback
 from datetime import datetime
 from typing import Any, Sequence
 
-from mysql.connector import IntegrityError, DatabaseError, pooling
+from mysql.connector import IntegrityError, DatabaseError, pooling, ProgrammingError
 from pypika import MySQLQuery, Field, Criterion
 
 # TODO change the config so it is imported from a static file
@@ -85,6 +85,9 @@ def fetch_all_db_data(query: MySQLQuery | str = None, params: dict = None,
             db_cur.execute(query, params)
             result = db_cur.fetchall()
             return result
+    except ProgrammingError as e:
+        traceback.print_exc()
+        print(e)
     except Exception:
         traceback.print_exc()
 
