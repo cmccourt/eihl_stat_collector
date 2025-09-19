@@ -22,7 +22,8 @@ def match(match_id: int):
 
 
 @router.get("/matches/")
-def matches(start_date=None, end_date=None, teams=None, championships=None):
+def matches(start_date: datetime = None, end_date: datetime = None, teams: list[str] = None,
+            championships: list[str | int] = None):
     match_query = MySQLQuery.from_("match").select("*")
 
     if start_date is None:
